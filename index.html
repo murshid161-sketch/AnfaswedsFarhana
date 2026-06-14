@@ -980,7 +980,7 @@ try{window.parent.postMessage({type:'__edit_mode_available'},'*');}catch(e){}
 
 <!-- Firebase SDK moved to <head> (loads before the main script) -->
 <!-- ADMIN + MUSIC + TOAST OVERLAYS -->
-<div id="adminBar">ADMIN MODE — reply buttons are on each wish<button onclick="exitAdmin()">EXIT</button></div>
+<div id="adminBar">ADMIN<button onclick="adminSetPhoto()">SET HERO PHOTO</button><button onclick="adminSetBgm()">SET BGM</button><button onclick="exitAdmin()">EXIT</button></div>
 <div id="pinModal">
   <div class="pin-card">
     <div class="pin-title">Admin Access</div>
@@ -992,6 +992,87 @@ try{window.parent.postMessage({type:'__edit_mode_available'},'*');}catch(e){}
   </div>
 </div>
 <button id="musicBtn" onclick="toggleMusic()" aria-label="music"><span class="ico-off">♪</span><span class="ico-on">♫</span></button>
+<input type="file" id="bgmFilePicker" accept="audio/*" style="display:none" onchange="uploadBgm(this)"/>
 <div id="toast"></div>
+<script>
+// ── ADMIN CLOUDINARY UPLOADS — hero photo + BGM (synced to all guests via Firebase) ──
+const CLOUD_NAME    = "dormnrhdf";
+const UPLOAD_PRESET = "ml_default";
+const CLOUDINARY_DELETE_URL = ""; // set to a Cloudflare Worker URL to auto-delete replaced assets
+const HERO_REF = IMG_PATH + '/hero';
+const BGM_REF  = IMG_PATH + '/bgm-url';
+
+function _slotUrl(v){ return (v && typeof v === 'object') ? v.url : v; }
+function _slotPid(v){ return (v && typeof v === 'object') ? v.public_id : null; }
+function _deleteAsset(pid, type){
+  if(!pid || !CLOUDINARY_DELETE_URL) return;
+  try{ fetch(CLOUDINARY_DELETE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({public_id:pid,resource_type:type||'image'})}).catch(function(){}); }catch(e){}
+}
+function _setHero(url){
+  const hb = document.querySelector('.hero-bg');
+  if(hb){ hb.style.backgroundImage = "url('" + url + "')"; hb.style.backgroundSize = 'cover'; hb.style.backgroundPosition = 'center'; }
+}
+
+// Load saved hero + bgm for every guest
+function loadHeroImage(){
+  if(!db) return;
+  db.ref(HERO_REF).once('value', function(s){ const u = _slotUrl(s.val()); if(u) _setHero(u); });
+}
+function loadBgmFromDb(){
+  if(!db) return;
+  db.ref(BGM_REF).once('value', function(s){ const u = s.val(); if(u){ bgmAudio.src = u; } });
+}
+loadHeroImage();
+loadBgmFromDb();
+
+// ADMIN: upload / change hero background photo
+function adminSetPhoto(){
+  if(!adminMode){ toast('Enter admin mode first.', true); return; }
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*'; inp.style.display = 'none';
+  inp.onchange = async function(){
+    const file = inp.files && inp.files[0];
+    if(!file){ if(inp.parentNode) inp.parentNode.removeChild(inp); return; }
+    toast('Uploading photo…');
+    let oldPid = null;
+    try{ const cur = await db.ref(HERO_REF).once('value'); oldPid = _slotPid(cur.val()); }catch(e){}
+    const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', UPLOAD_PRESET); fd.append('folder', COUPLE_FOLDER);
+    try{
+      const res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/image/upload', {method:'POST', body:fd});
+      const data = await res.json();
+      if(!data || !data.secure_url) throw new Error((data && data.error && data.error.message) || 'upload error');
+      db.ref(HERO_REF).set({ url: data.secure_url, public_id: data.public_id });
+      _setHero(data.secure_url);
+      if(oldPid && oldPid !== data.public_id) _deleteAsset(oldPid, 'image');
+      toast('Hero photo updated 🤍');
+    }catch(e){ toast('Photo upload failed — try again.', true); }
+    finally{ if(inp.parentNode) inp.parentNode.removeChild(inp); }
+  };
+  document.body.appendChild(inp); inp.click();
+  window.addEventListener('focus', function c(){ setTimeout(function(){ if(inp.parentNode && (!inp.files || !inp.files.length)) inp.parentNode.removeChild(inp); }, 800); window.removeEventListener('focus', c); }, {once:true});
+}
+
+// ADMIN: upload / change BGM (Cloudinary /video/upload)
+function adminSetBgm(){
+  if(!adminMode){ toast('Enter admin mode first.', true); return; }
+  document.getElementById('bgmFilePicker').click();
+}
+function uploadBgm(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  toast('Uploading music…');
+  const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', UPLOAD_PRESET); fd.append('folder', COUPLE_FOLDER + '/bgm');
+  fetch('https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/video/upload', {method:'POST', body:fd})
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(!data || !data.secure_url){ toast('Music upload failed — try again.', true); return; }
+      bgmAudio.src = data.secure_url;
+      if(db){ db.ref(BGM_REF).set(data.secure_url, function(err){ toast(err ? 'Uploaded, but Firebase save failed.' : 'Music updated 🤍', !!err); }); }
+      bgmAudio.play().then(function(){ bgmPlaying = true; const b = document.getElementById('musicBtn'); if(b) b.classList.add('playing'); }).catch(function(){});
+    })
+    .catch(function(){ toast('Music upload failed — try again.', true); });
+  input.value = '';
+}
+</script>
 </body>
 </html>
