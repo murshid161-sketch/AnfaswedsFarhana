@@ -465,7 +465,7 @@ footer{padding:5rem 1.5rem 3rem;text-align:center;position:relative;z-index:3;}
   <div class="foot-rule"></div>
   <div class="foot-names">Anfas &amp; Farhana</div>
   <div class="foot-date">02 · AUGUST · 2026 · NIKAH<br/>RIVERA CONVENTION CENTRE · VALLIKKUNNU, KERALA</div>
-  <div class="foot-credit">Crafted with ♡ by <a href="#">Digi Wed</a></div>
+  <div class="foot-credit" id="digiwedCredit">Crafted with ♡ by <a href="#">Digi Wed</a></div>
   <button class="admin-link" onclick="openPin()">ADMIN</button>
 </footer>
 
@@ -954,6 +954,22 @@ applyTweaks();
   touchLoop();
 })();
 
+// ── DASHBOARD (long-press the DigiWed credit -> password-gated dashboard.html) ──
+(function(){
+  const el = document.getElementById('digiwedCredit');
+  if(!el) return;
+  let t;
+  function start(e){ e.preventDefault(); t = setTimeout(()=>{ window.location.href='dashboard.html'; }, 1000); }
+  function cancel(){ clearTimeout(t); }
+  el.style.cursor = 'default';
+  el.addEventListener('touchstart', start, {passive:false});
+  el.addEventListener('touchend',   cancel);
+  el.addEventListener('touchmove',  cancel);
+  el.addEventListener('mousedown',  start);
+  el.addEventListener('mouseup',    cancel);
+  el.addEventListener('mouseleave', cancel);
+  el.addEventListener('click', e => e.preventDefault());
+})();
 window.addEventListener('message',(e)=>{
   const t=e.data&&e.data.type;
   if(t==='__activate_edit_mode')document.getElementById('tweaks').classList.add('on');
