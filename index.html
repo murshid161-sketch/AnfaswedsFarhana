@@ -321,6 +321,29 @@ footer{padding:5rem 1.5rem 3rem;text-align:center;position:relative;z-index:3;}
   <div class="rv rv-d2" style="font-family:var(--micro,sans-serif);font-size:.62rem;letter-spacing:.34em;color:var(--gold,#b08d5b);margin-top:1.6rem;opacity:.75;">SURAH AR-RUM &middot; 30:21</div>
 </section>
 
+<!-- COUNTDOWN -->
+<section id="countdown" style="padding:4.5rem 1.5rem 4rem;text-align:center;">
+  <div class="rv" id="cdHeading" style="font-family:var(--micro);font-size:.6rem;letter-spacing:.4em;color:var(--gold);text-transform:uppercase;opacity:.85;">Counting down to the Nikah</div>
+  <div class="rv rv-d1" style="display:flex;justify-content:center;gap:.7rem;flex-wrap:wrap;margin-top:1.8rem;">
+    <div style="min-width:66px;border:1px solid var(--line);padding:1rem .6rem;background:rgba(255,255,255,.015);">
+      <div id="cdDays" style="font-family:var(--serif);font-weight:300;font-size:2.3rem;line-height:1;color:var(--gold-hi);">00</div>
+      <div style="font-family:var(--micro);font-size:.5rem;letter-spacing:.25em;color:var(--gold);margin-top:.5rem;">DAYS</div>
+    </div>
+    <div style="min-width:66px;border:1px solid var(--line);padding:1rem .6rem;background:rgba(255,255,255,.015);">
+      <div id="cdHours" style="font-family:var(--serif);font-weight:300;font-size:2.3rem;line-height:1;color:var(--gold-hi);">00</div>
+      <div style="font-family:var(--micro);font-size:.5rem;letter-spacing:.25em;color:var(--gold);margin-top:.5rem;">HOURS</div>
+    </div>
+    <div style="min-width:66px;border:1px solid var(--line);padding:1rem .6rem;background:rgba(255,255,255,.015);">
+      <div id="cdMins" style="font-family:var(--serif);font-weight:300;font-size:2.3rem;line-height:1;color:var(--gold-hi);">00</div>
+      <div style="font-family:var(--micro);font-size:.5rem;letter-spacing:.25em;color:var(--gold);margin-top:.5rem;">MINUTES</div>
+    </div>
+    <div style="min-width:66px;border:1px solid var(--line);padding:1rem .6rem;background:rgba(255,255,255,.015);">
+      <div id="cdSecs" style="font-family:var(--serif);font-weight:300;font-size:2.3rem;line-height:1;color:var(--gold-hi);">00</div>
+      <div style="font-family:var(--micro);font-size:.5rem;letter-spacing:.25em;color:var(--gold);margin-top:.5rem;">SECONDS</div>
+    </div>
+  </div>
+</section>
+
 <!-- EVENTS -->
 <section id="events">
   <div class="eyebrow rv">THE CELEBRATION</div>
@@ -1073,6 +1096,27 @@ function uploadBgm(input){
     .catch(function(){ toast('Music upload failed — try again.', true); });
   input.value = '';
 }
+</script>
+<script>
+// â”€â”€ COUNTDOWN -> TOGETHERNESS COUNT-UP (flips after the Nikah moment) â”€â”€
+(function(){
+  function pad(v){ return String(v).padStart(2,'0'); }
+  function tick(){
+    var target = new Date('2026-08-02T11:00:00+05:30');
+    var diff = target - new Date();
+    var past = diff <= 0;
+    var d = Math.abs(diff);
+    var set = function(id,v){ var e=document.getElementById(id); if(e) e.textContent=pad(v); };
+    set('cdDays',  Math.floor(d/86400000));
+    set('cdHours', Math.floor((d%86400000)/3600000));
+    set('cdMins',  Math.floor((d%3600000)/60000));
+    set('cdSecs',  Math.floor((d%60000)/1000));
+    var head=document.getElementById('cdHeading');
+    if(head && past && head.dataset.flipped!=='1'){ head.dataset.flipped='1'; head.textContent='Together for'; }
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
 </script>
 </body>
 </html>
