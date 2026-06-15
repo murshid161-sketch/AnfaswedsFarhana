@@ -1039,7 +1039,12 @@ function loadHeroImage(){
 }
 function loadBgmFromDb(){
   if(!db) return;
-  db.ref(BGM_REF).once('value', function(s){ const u = s.val(); if(u){ bgmAudio.src = u; } });
+  db.ref(BGM_REF).once('value', function(s){
+    const u = s.val();
+    // Only update src if playback hasn't started and the URL actually differs —
+    // reassigning .src reloads the element and would interrupt an in-progress play().
+    if(u && !bgmPlaying && bgmAudio.src !== u){ bgmAudio.src = u; }
+  });
 }
 loadHeroImage();
 loadBgmFromDb();
